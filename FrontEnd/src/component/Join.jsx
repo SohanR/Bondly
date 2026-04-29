@@ -20,20 +20,15 @@ import Fade from "@mui/material/Fade";
 import Badge from "@mui/material/Badge";
 import MailIcon from "@mui/icons-material/Mail";
 import { Typography } from "@mui/material";
-import { searchuser } from "../api/api-post";
 import { getSenderFull } from "../config/chatLogic";
 import FindPeople from "./FindPeople";
 import Box from "@mui/material/Box";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getChat } from "../api/api-post";
-import { setMessage } from "../api/api-post";
-import { fetchChats } from "../api/api-post";
 import BounceLoader from "react-spinners/BounceLoader";
 import MoonLoader from "react-spinners/MoonLoader";
 import TextField from "@mui/material/TextField";
 import CircularProgress from "@mui/material/CircularProgress";
-import { getMessage } from "../api/api-post";
 import Stack from "@mui/material/Stack";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import Autocomplete from "@mui/material/Autocomplete";
@@ -44,6 +39,13 @@ import {
   isSameSenderMargin,
   isSameUser,
 } from "../config/chatLogic";
+import { searchuser } from "../api/users/userApi";
+import {
+  fetchChats,
+  getChat,
+  getMessage,
+  setMessage,
+} from "../api/chat/chatApi";
 
 var socket;
 var selectedChatCompare;
@@ -102,7 +104,7 @@ const Join = () => {
         {
           t: jwt.token,
         },
-        chat._id
+        chat._id,
       ).then((data) => {
         setMessages(data);
         socket.emit("join chat", chat._id);
@@ -124,7 +126,7 @@ const Join = () => {
       {
         t: jwt.token,
       },
-      v._id
+      v._id,
     ).then((data) => {
       if (data) {
         setSelectChat(true);
@@ -144,7 +146,7 @@ const Join = () => {
       { id: user1.id, chatId: chat._id, content: newMessage },
       {
         t: jwt.token,
-      }
+      },
     ).then((data) => {
       socket.emit("new message", data);
       setMessages([...messages, data]);
@@ -162,7 +164,7 @@ const Join = () => {
       },
       {
         search: search,
-      }
+      },
     ).then((data) => {
       if (search != "") setSearchResult(data);
       else setSearchResult([]);
@@ -190,7 +192,7 @@ const Join = () => {
       },
       {
         t: jwt.token,
-      }
+      },
     ).then((data) => {
       if (data) setChats(data);
       console.log(data);
@@ -275,10 +277,10 @@ const Join = () => {
   };
 
   const handleKeyDown = (event) => {
-    if (event.key === 'Enter') {
+    if (event.key === "Enter") {
       PostMessage();
     }
-  }
+  };
   useEffect(scrollToBottom, [messages]);
   return (
     <div>
@@ -402,79 +404,80 @@ const Join = () => {
               </div>
             </div>
             <div className="justify-content-center scroll overflow-auto px-3 mt-2">
-            <div className=" mb-2">
-              <i
-                className={"fa fa-moon-o btn btn-dark mb-1 "}
-                onClick={() => change("dark")}
-              >
-                dark
-              </i>
-              <button
-                className={"fa fa-moon-o btn btn-light mb-1"}
-                onClick={() => change("light")}
-              >
-                light
-              </button>
+              <div className=" mb-2">
+                <i
+                  className={"fa fa-moon-o btn btn-dark mb-1 "}
+                  onClick={() => change("dark")}
+                >
+                  dark
+                </i>
+                <button
+                  className={"fa fa-moon-o btn btn-light mb-1"}
+                  onClick={() => change("light")}
+                >
+                  light
+                </button>
               </div>
               {chats.map((chat) => {
                 return (
                   <div>
-                  {chat.latestMessage &&
-                  <div
-                    className="d-flex text-white align-items-center justify-content-between px-3 py-1 hovering shadow-sm  mb-1 
+                    {chat.latestMessage && (
+                      <div
+                        className="d-flex text-white align-items-center justify-content-between px-3 py-1 hovering shadow-sm  mb-1 
               border-radius"
-                    onClick={() => {
-                      Setloading1(true);
-                      setTimeout(function () {
-                        Setloading1(false);
-                        setSelectChat(true);
-                        setValue1(getSenderFull(user1, chat.users));
-                        setChat(chat);
-                      }, 700);
-                    }}
-                    style={{
-                      backgroundColor: `${ChatColor}`,
-                    }}
-                  >
-                    <div className="d-flex align-items-center">
-                      <img
-                        src={getSenderFull(user1, chat.users).image}
-                        alt=""
-                        className="rounded-circle me-3"
-                        width="50px"
-                        height="50px"
-                      />
-                      <div className="mt-3">
-                        <h6
-                          style={{ color: `${TextColor}` }}
-                          className="m-0 text-lg-left font-weight-bold"
-                        >
-                          {getSender(user1, chat.users)}
-                        </h6>
-                        {chat.latestMessage ? (
-                          <p style={{ color: `${STextColor}` }}>
-                            {chat.latestMessage.content}
-                          </p>
-                        ) : null}
+                        onClick={() => {
+                          Setloading1(true);
+                          setTimeout(function () {
+                            Setloading1(false);
+                            setSelectChat(true);
+                            setValue1(getSenderFull(user1, chat.users));
+                            setChat(chat);
+                          }, 700);
+                        }}
+                        style={{
+                          backgroundColor: `${ChatColor}`,
+                        }}
+                      >
+                        <div className="d-flex align-items-center">
+                          <img
+                            src={getSenderFull(user1, chat.users).image}
+                            alt=""
+                            className="rounded-circle me-3"
+                            width="50px"
+                            height="50px"
+                          />
+                          <div className="mt-3">
+                            <h6
+                              style={{ color: `${TextColor}` }}
+                              className="m-0 text-lg-left font-weight-bold"
+                            >
+                              {getSender(user1, chat.users)}
+                            </h6>
+                            {chat.latestMessage ? (
+                              <p style={{ color: `${STextColor}` }}>
+                                {chat.latestMessage.content}
+                              </p>
+                            ) : null}
+                          </div>
+                        </div>
+                        <div className="">
+                          {chat.latestMessage ? (
+                            <p
+                              className="m-0 mb-2"
+                              style={{ color: `${STextColor}` }}
+                            >
+                              {new Date(
+                                chat.latestMessage.createdAt,
+                              ).toLocaleTimeString("en-US", {
+                                // en-US can be set to 'default' to use user's browser settings
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </p>
+                          ) : null}
+                        </div>
                       </div>
-                    </div>
-                    <div className="">
-                      {chat.latestMessage ? (
-                        <p
-                          className="m-0 mb-2"
-                          style={{ color: `${STextColor}` }}
-                        >
-                          {new Date(
-                            chat.latestMessage.createdAt
-                          ).toLocaleTimeString("en-US", {
-                            // en-US can be set to 'default' to use user's browser settings
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </p>
-                      ) : null}
-                    </div>
-                  </div>}
+                    )}
                   </div>
                 );
               })}
@@ -532,7 +535,7 @@ const Join = () => {
                             messages,
                             m,
                             i,
-                            user1.id
+                            user1.id,
                           ),
                           marginTop: isSameUser(messages, m, i, user1.id)
                             ? 3
@@ -571,7 +574,7 @@ const Join = () => {
                 <input
                   style={{
                     backgroundColor: `${Color4}`,
-                    color:`${TextColor}`
+                    color: `${TextColor}`,
                   }}
                   value={newMessage}
                   onChange={typingHandler}
