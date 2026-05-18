@@ -1,0 +1,55 @@
+.post-card {
+  border-radius: 18px !important;
+  border-color: rgba(15, 23, 42, 0.1) !important;
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+  transition: border-color 160ms ease, box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.post-card:hover {
+  border-color: rgba(25, 118, 210, 0.22) !important;
+  box-shadow: 0 18px 52px rgba(15, 23, 42, 0.12);
+  transform: translateY(-1px);
+}
+
+.post-card .primary .content {
+  -webkit-mask-image: linear-gradient(black 175px, transparent 250px);
+  mask-image: linear-gradient(black 175px, transparent 250px);
+}
+
+.post-card .secondary .title {
+  -webkit-mask-image: linear-gradient(black 56px, transparent 94px);
+  mask-image: linear-gradient(black 56px, transparent 94px);
+}
+
+.post-card .title {
+  line-height: 1.22;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.post-card-actions {
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  padding-top: 12px;
+}
+
+.post-card .secondary .title {
+  font-size: 1.1rem;
+  max-height: 92px;
+}
+
+.post-card .secondary .post-card-actions {
+  gap: 8px;
+}
+
+.post-card .secondary .post-card-actions > .MuiStack-root:first-of-type {
+  flex-wrap: wrap;
+}
+
+html {
+  overflow-y: scroll;
+}
+
+
+
