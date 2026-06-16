@@ -9,6 +9,7 @@ const verifyToken = (req, res, next) => {
     }
 
     const { userId, isAdmin } = jwt.verify(token, process.env.TOKEN_KEY);
+    req.auth = { userId, isAdmin };
 
     req.body = {
       ...req.body,
@@ -29,6 +30,7 @@ const optionallyVerifyToken = (req, res, next) => {
     if (!token) return next();
 
     const decoded = jwt.verify(token, process.env.TOKEN_KEY);
+    req.auth = decoded;
     req.body.userId = decoded.userId;
 
     next();

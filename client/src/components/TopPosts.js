@@ -16,7 +16,7 @@ import { isLoggedIn } from "../helpers/authHelper";
 import Loading from "./Loading";
 import HorizontalStack from "./util/HorizontalStack";
 
-const TopPosts = () => {
+const TopPosts = ({ space, circle, title = "Top Posts" }) => {
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState(null);
   const user = isLoggedIn();
@@ -24,7 +24,9 @@ const TopPosts = () => {
 
   useEffect(() => {
     const fetchPosts = async () => {
-      const query = { sortBy: "-likeCount" };
+      const query = { sortBy: circle ? "-helpfulCount" : space ? "-voteScore" : "-likeCount" };
+      if (space) query.space = space;
+      if (circle) query.circle = circle;
       const data = await getPosts(token, query);
       const topPosts = [];
 
@@ -39,7 +41,7 @@ const TopPosts = () => {
     };
 
     fetchPosts();
-  }, [token]);
+  }, [token, space, circle]);
 
   return (
     <Card
@@ -72,10 +74,10 @@ const TopPosts = () => {
           </Box>
           <Box>
             <Typography sx={{ fontWeight: 800, lineHeight: 1.1 }}>
-              Top Posts
+              {title}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              Most liked right now
+              {circle ? "Most helpful discussions" : space ? "Top posts here" : "Most liked right now"}
             </Typography>
           </Box>
         </HorizontalStack>
@@ -103,8 +105,12 @@ const TopPosts = () => {
                     <ListItemText
                       primary={post.title}
                       secondary={`@${post.poster?.username || "unknown"} - ${
-                        post.likeCount || 0
-                      } ${post.likeCount === 1 ? "like" : "likes"}`}
+                        circle
+                          ? `${post.helpfulCount || 0} helpful`
+                          : space
+                          ? `${post.voteScore || 0} score`
+                          : `${post.likeCount || 0} ${post.likeCount === 1 ? "like" : "likes"}`
+                      }`}
                       primaryTypographyProps={{
                         fontWeight: 900,
                         color: "text.primary",

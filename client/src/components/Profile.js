@@ -16,6 +16,7 @@ import {
 import { isLoggedIn } from "../helpers/authHelper";
 import Loading from "./Loading";
 import UserAvatar from "./UserAvatar";
+import UserBadges from "./UserBadges";
 import HorizontalStack from "./util/HorizontalStack";
 
 const Profile = (props) => {
@@ -76,9 +77,12 @@ const Profile = (props) => {
           </Box>
 
           <Box textAlign="center">
-            <Typography variant="h5" sx={{ fontWeight: 900 }}>
-              {user.username}
-            </Typography>
+            <HorizontalStack justifyContent="center" spacing={0.75}>
+              <Typography variant="h5" sx={{ fontWeight: 900 }}>
+                {user.username}
+              </Typography>
+              <UserBadges badges={user.showcaseBadges} size={22} />
+            </HorizontalStack>
             <Typography variant="body2" color="text.secondary">
               DevSpace member
             </Typography>

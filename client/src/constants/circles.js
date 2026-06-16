@@ -1,0 +1,5 @@
+import { SPACE_SPECIALIZATIONS } from "./spaces";
+
+const CIRCLE_STACKS = SPACE_SPECIALIZATIONS;
+
+export { CIRCLE_STACKS };

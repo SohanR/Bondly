@@ -4,6 +4,7 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { getUser, updateUser } from "../../api/users";
 import { isLoggedIn } from "../../helpers/authHelper";
 import CommentBrowser from "../CommentBrowser";
+import BadgesPanel from "../BadgesPanel";
 
 import ErrorAlert from "../ErrorAlert";
 import FindUsers from "../FindUsers";
@@ -14,6 +15,7 @@ import Navbar from "../Navbar";
 import PostBrowser from "../PostBrowser";
 import Profile from "../Profile";
 import ProfileTabs from "../ProfileTabs";
+import UserSpaces from "../UserSpaces";
 
 const ProfileView = () => {
   const [profile, setProfile] = useState(null);
@@ -51,6 +53,10 @@ const ProfileView = () => {
 
   const handleMessage = () => {
     navigate("/messenger", { state: { user: profile.user } });
+  };
+
+  const handleProfileChange = (nextProfile) => {
+    setProfile(nextProfile);
   };
 
   useEffect(() => {
@@ -129,6 +135,13 @@ const ProfileView = () => {
             />
 
             <FindUsers />
+            {profile && <UserSpaces profile={profile} />}
+            {profile && (
+              <BadgesPanel
+                profile={profile}
+                onProfileChange={handleProfileChange}
+              />
+            )}
           </Stack>
         }
       />

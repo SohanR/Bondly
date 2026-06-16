@@ -6,14 +6,16 @@ import Loading from "./Loading";
 import { getComments } from "../api/posts";
 import { useParams } from "react-router-dom";
 import CommentEditor from "./CommentEditor";
+import { isLoggedIn } from "../helpers/authHelper";
 
 const Comments = () => {
   const [comments, setComments] = useState(null);
   const [rerender, setRerender] = useState(false);
   const params = useParams();
+  const user = isLoggedIn();
 
   const fetchComments = async () => {
-    const data = await getComments(params);
+    const data = await getComments(params, user && user.token);
     if (!data.error) {
       setComments(data);
     }

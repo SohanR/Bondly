@@ -1,6 +1,5 @@
 import { useTheme } from "@emotion/react";
 import {
-  Avatar,
   Button,
   Card,
   Divider,
@@ -15,6 +14,7 @@ import { MdCancel } from "react-icons/md";
 import { isLoggedIn } from "../helpers/authHelper";
 import ContentUpdateEditor from "./ContentUpdateEditor";
 import UserAvatar from "./UserAvatar";
+import UserBadges from "./UserBadges";
 import HorizontalStack from "./util/HorizontalStack";
 
 const MobileProfile = (props) => {
@@ -36,9 +36,12 @@ const MobileProfile = (props) => {
           <HorizontalStack spacing={2} justifyContent="space-between">
             <HorizontalStack>
               <UserAvatar width={50} height={50} username={user.username} />
-              <Typography variant="h6" textOverflow="ellipses">
-                {user.username}
-              </Typography>
+              <HorizontalStack spacing={0.5}>
+                <Typography variant="h6" textOverflow="ellipses">
+                  {user.username}
+                </Typography>
+                <UserBadges badges={user.showcaseBadges} size={18} />
+              </HorizontalStack>
             </HorizontalStack>
 
             <Box sx={{ display: { xs: "none", sm: "block" } }}>

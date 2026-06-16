@@ -40,6 +40,58 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    emailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    emailVerifiedAt: {
+      type: Date,
+    },
+    emailVerificationOtpHash: {
+      type: String,
+      select: false,
+    },
+    emailVerificationOtpExpiresAt: {
+      type: Date,
+      select: false,
+    },
+    emailVerificationOtpAttempts: {
+      type: Number,
+      default: 0,
+      select: false,
+    },
+    emailVerificationLastSentAt: {
+      type: Date,
+    },
+    githubConnected: {
+      type: Boolean,
+      default: false,
+    },
+    githubId: {
+      type: String,
+    },
+    githubUsername: {
+      type: String,
+    },
+    githubConnectedAt: {
+      type: Date,
+    },
+    githubPublicRepos: {
+      type: Number,
+      default: 0,
+    },
+    githubTotalStars: {
+      type: Number,
+      default: 0,
+    },
+    showcaseBadges: {
+      type: [String],
+      default: [],
+      validate: {
+        validator: (badges) => badges.length <= 3,
+        message: "You can showcase at most 3 badges",
+      },
+    },
   },
   { timestamps: true }
 );

@@ -3,10 +3,10 @@ import React from "react";
 import FindUsers from "./FindUsers";
 import TopPosts from "./TopPosts";
 
-const Sidebar = () => {
+const Sidebar = (props) => {
   return (
     <Stack spacing={2}>
-      <TopPosts />
+      <TopPosts {...props} />
       <FindUsers />
     </Stack>
   );

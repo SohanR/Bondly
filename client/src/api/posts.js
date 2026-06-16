@@ -115,10 +115,14 @@ const deletePost = async (postId, user) => {
   }
 };
 
-const getComments = async (params) => {
+const getComments = async (params, token) => {
   try {
     const { id } = params;
-    const res = await fetch(BASE_URL + "api/comments/post/" + id);
+    const res = await fetch(BASE_URL + "api/comments/post/" + id, {
+      headers: {
+        "x-access-token": token,
+      },
+    });
     return res.json();
   } catch (err) {
     console.log(err);
@@ -214,6 +218,37 @@ const unlikePost = async (postId, user) => {
   }
 };
 
+const votePost = async (postId, user, value) => {
+  try {
+    const res = await fetch(BASE_URL + "api/posts/" + postId + "/vote", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "x-access-token": user.token,
+      },
+      body: JSON.stringify({ value }),
+    });
+    return res.json();
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+const unvotePost = async (postId, user) => {
+  try {
+    const res = await fetch(BASE_URL + "api/posts/" + postId + "/vote", {
+      method: "DELETE",
+      headers: {
+        "x-access-token": user.token,
+      },
+    });
+    return res.json();
+  } catch (err) {
+    console.log(err);
+  }
+};
+
 export {
   getPost,
   createPost,
@@ -228,5 +263,7 @@ export {
   updateComment,
   likePost,
   unlikePost,
+  votePost,
+  unvotePost,
   getUserLikes,
 };

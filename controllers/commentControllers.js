@@ -1,6 +1,7 @@
 const Comment = require("../models/Comment");
 const mongoose = require("mongoose");
 const Post = require("../models/Post");
+const CircleMember = require("../models/CircleMember");
 const paginate = require("../util/paginate");
 
 const COMMENT_RATE_LIMIT = 10;
@@ -54,10 +55,22 @@ const createComment = async (req, res) => {
     const postId = req.params.id;
     const { content, parentId, userId } = req.body;
 
-    const post = await Post.findById(postId);
+    const post = await Post.findById(postId).populate("circle");
 
     if (!post) {
       throw new Error("Post not found");
+    }
+
+    if (post.postType === "circle") {
+      const membership = await CircleMember.findOne({
+        circleId: post.circle?._id,
+        userId,
+        status: "approved",
+      });
+
+      if (!membership) {
+        throw new Error("Join this Circle before commenting");
+      }
     }
 
     if (isCommentRateLimited(userId)) {
@@ -88,6 +101,30 @@ const createComment = async (req, res) => {
 const getPostComments = async (req, res) => {
   try {
     const postId = req.params.id;
+    const { userId } = req.body;
+
+    const post = await Post.findById(postId).populate("circle");
+    if (!post) {
+      throw new Error("Post not found");
+    }
+
+    if (post.postType === "circle") {
+      const canView =
+        post.status === "approved" &&
+        post.circle?.published &&
+        (post.circle.mode === "public" ||
+          (userId &&
+            (post.circle.owner.equals(userId) ||
+              (await CircleMember.findOne({
+                circleId: post.circle._id,
+                userId,
+                status: "approved",
+              })))));
+
+      if (!canView) {
+        throw new Error("Post not found");
+      }
+    }
 
     const comments = await Comment.find({ post: postId })
       .populate("commenter", "-password")

@@ -12,6 +12,8 @@ router.delete("/:id", verifyToken, postControllers.deletePost);
 
 router.post("/like/:id", verifyToken, postControllers.likePost);
 router.delete("/like/:id", verifyToken, postControllers.unlikePost);
+router.post("/:id/vote", verifyToken, postControllers.votePost);
+router.delete("/:id/vote", verifyToken, postControllers.unvotePost);
 router.get(
   "/liked/:id",
   optionallyVerifyToken,

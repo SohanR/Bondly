@@ -11,7 +11,7 @@ import { getPost } from "../../api/posts";
 import Comments from "../Comments";
 import ErrorAlert from "../ErrorAlert";
 import { isLoggedIn } from "../../helpers/authHelper";
-import TopTags from "../TopTags";
+import DiscoverRail from "../DiscoverRail";
 
 const PostView = () => {
   const params = useParams();
@@ -42,7 +42,7 @@ const PostView = () => {
       <Navbar />
       <GoBack />
       <GridLayout
-        leftRail={<TopTags />}
+        leftRail={<DiscoverRail />}
         left={
           loading ? (
             <Loading />

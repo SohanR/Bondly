@@ -3,6 +3,11 @@ const Post = require("../models/Post");
 const User = require("../models/User");
 const Comment = require("../models/Comment");
 const PostLike = require("../models/PostLike");
+const Space = require("../models/Space");
+const SpacePostVote = require("../models/SpacePostVote");
+const Circle = require("../models/Circle");
+const CircleMember = require("../models/CircleMember");
+const CirclePostHelpful = require("../models/CirclePostHelpful");
 const paginate = require("../util/paginate");
 const Tag = require("../models/Tag");
 const {
@@ -56,6 +61,11 @@ const createPost = async (req, res) => {
       throw new Error("All input required");
     }
 
+    const user = await User.findById(userId);
+    if (!user?.emailVerified) {
+      throw new Error("Verify your email before creating posts");
+    }
+
     if (cooldown.has(userId)) {
       throw new Error(
         "You are posting too frequently. Please try again shortly."
@@ -94,6 +104,8 @@ const getPost = async (req, res) => {
 
     const post = await Post.findById(postId)
       .populate("poster", "-password")
+      .populate("space")
+      .populate("circle")
       .populate("tags")
       .lean();
 
@@ -101,8 +113,21 @@ const getPost = async (req, res) => {
       throw new Error("Post does not exist");
     }
 
+    if (post.postType === "space" && !post.space?.published) {
+      throw new Error("Post does not exist");
+    }
+
+    if (post.postType === "circle") {
+      const canViewCirclePost = await canViewerSeeCirclePost(post, userId);
+      if (!canViewCirclePost) {
+        throw new Error("Post does not exist");
+      }
+    }
+
     if (userId) {
       await setLiked([post], userId);
+      await setSpaceVotes([post], userId);
+      await setCircleHelpful([post], userId);
     }
 
     await enrichWithUserLikePreview([post]);
@@ -118,13 +143,20 @@ const updatePost = async (req, res) => {
     const postId = req.params.id;
     const { content, userId, isAdmin } = req.body;
 
-    const post = await Post.findById(postId);
+    const post = await Post.findById(postId).populate("space");
 
     if (!post) {
       throw new Error("Post does not exist");
     }
 
-    if (post.poster != userId && !isAdmin) {
+    if (post.postType === "circle") {
+      await post.populate("circle");
+    }
+
+    const isCircleAdmin =
+      post.postType === "circle" && post.circle?.owner?.equals(userId);
+
+    if (post.poster != userId && !isAdmin && !isCircleAdmin) {
       throw new Error("Not authorized to update post");
     }
 
@@ -133,6 +165,7 @@ const updatePost = async (req, res) => {
     await setPostTags(post, extractHashtags(post.title, content));
 
     await post.save();
+    await post.populate("space");
     await post.populate("tags");
 
     return res.json(post);
@@ -146,13 +179,20 @@ const deletePost = async (req, res) => {
     const postId = req.params.id;
     const { userId, isAdmin } = req.body;
 
-    const post = await Post.findById(postId);
+    const post = await Post.findById(postId).populate("space");
 
     if (!post) {
       throw new Error("Post does not exist");
     }
 
-    if (post.poster != userId && !isAdmin) {
+    if (post.postType === "circle") {
+      await post.populate("circle");
+    }
+
+    const isCircleAdmin =
+      post.postType === "circle" && post.circle?.owner?.equals(userId);
+
+    if (post.poster != userId && !isAdmin && !isCircleAdmin) {
       throw new Error("Not authorized to delete post");
     }
 
@@ -160,6 +200,24 @@ const deletePost = async (req, res) => {
     await post.remove();
 
     await Comment.deleteMany({ post: post._id });
+
+    if (post.postType === "space" && post.space) {
+      const space = await Space.findById(post.space._id);
+      if (space) {
+        space.postCount = await Post.countDocuments({
+          space: space._id,
+          postType: "space",
+        });
+        await refreshSpaceVoteTotals(space);
+      }
+    }
+
+    if (post.postType === "circle" && post.circle) {
+      const circle = await Circle.findById(post.circle._id);
+      if (circle) {
+        await refreshCircleTotals(circle);
+      }
+    }
 
     return res.json(post);
   } catch (err) {
@@ -175,6 +233,8 @@ const setLiked = async (posts, userId) => {
   const userPostLikes = await PostLike.find(searchCondition); //userId needed
 
   posts.forEach((post) => {
+    if (post.postType === "space" || post.postType === "circle") return;
+
     userPostLikes.forEach((userPostLike) => {
       if (userPostLike.postId.equals(post._id)) {
         post.liked = true;
@@ -182,6 +242,110 @@ const setLiked = async (posts, userId) => {
       }
     });
   });
+};
+
+const setSpaceVotes = async (posts, userId) => {
+  if (!userId) return;
+
+  const spacePostIds = posts
+    .filter((post) => post.postType === "space")
+    .map((post) => post._id);
+
+  if (!spacePostIds.length) return;
+
+  const votes = await SpacePostVote.find({
+    postId: { $in: spacePostIds },
+    userId,
+  });
+
+  posts.forEach((post) => {
+    const vote = votes.find((item) => item.postId.equals(post._id));
+    if (vote) post.viewerVote = vote.value;
+  });
+};
+
+const setCircleHelpful = async (posts, userId) => {
+  if (!userId) return;
+
+  const circlePostIds = posts
+    .filter((post) => post.postType === "circle")
+    .map((post) => post._id);
+
+  if (!circlePostIds.length) return;
+
+  const helpfuls = await CirclePostHelpful.find({
+    postId: { $in: circlePostIds },
+    userId,
+  });
+
+  posts.forEach((post) => {
+    post.viewerHelpful = helpfuls.some((item) => item.postId.equals(post._id));
+  });
+};
+
+const canViewerSeeCirclePost = async (post, userId) => {
+  if (post.status !== "approved") return false;
+  if (!post.circle?.published) return false;
+  if (post.circle.mode === "public") return true;
+  if (!userId) return false;
+
+  if (String(post.circle.owner) === String(userId)) return true;
+
+  const membership = await CircleMember.findOne({
+    circleId: post.circle._id,
+    userId,
+    status: "approved",
+  });
+
+  return Boolean(membership);
+};
+
+const refreshSpaceVoteTotals = async (space) => {
+  const totals = await Post.aggregate([
+    { $match: { space: space._id, postType: "space" } },
+    {
+      $group: {
+        _id: "$space",
+        voteCount: { $sum: "$voteScore" },
+        impressionCount: { $sum: "$impressionCount" },
+      },
+    },
+  ]);
+
+  space.voteCount = totals[0]?.voteCount || 0;
+  space.impressionCount = totals[0]?.impressionCount || 0;
+  await space.save();
+};
+
+const refreshCircleTotals = async (circle) => {
+  circle.memberCount = await CircleMember.countDocuments({
+    circleId: circle._id,
+    status: "approved",
+  });
+  circle.postCount = await Post.countDocuments({
+    circle: circle._id,
+    postType: "circle",
+    status: "approved",
+  });
+
+  const totals = await Post.aggregate([
+    {
+      $match: {
+        circle: circle._id,
+        postType: "circle",
+        status: "approved",
+      },
+    },
+    {
+      $group: {
+        _id: "$circle",
+        helpfulCount: { $sum: "$helpfulCount" },
+      },
+    },
+  ]);
+
+  circle.helpfulCount = totals[0]?.helpfulCount || 0;
+  await circle.save();
 };
 
 const enrichWithUserLikePreview = async (posts) => {
@@ -220,6 +384,8 @@ const getUserLikedPosts = async (req, res) => {
         path: "postId",
         populate: [
           { path: "poster" },
+          { path: "space" },
+          { path: "circle" },
           { path: "tags" },
         ],
       })
@@ -238,6 +404,8 @@ const getUserLikedPosts = async (req, res) => {
 
     if (userId) {
       await setLiked(responsePosts, userId);
+      await setSpaceVotes(responsePosts, userId);
+      await setCircleHelpful(responsePosts, userId);
     }
 
     await enrichWithUserLikePreview(responsePosts);
@@ -253,7 +421,7 @@ const getPosts = async (req, res) => {
   try {
     const { userId } = req.body;
 
-    let { page, sortBy, author, search, tag } = req.query;
+    let { page, sortBy, author, search, tag, space, circle } = req.query;
 
     if (!sortBy) sortBy = "-createdAt";
     if (!page) page = 1;
@@ -270,14 +438,72 @@ const getPosts = async (req, res) => {
       searchCondition.tags = tagDocument._id;
     }
 
+    let requestedSpace = null;
+    if (space) {
+      requestedSpace = await Space.findOne({ slug: space, published: true });
+
+      if (!requestedSpace) {
+        return res.json({ data: [], count: 0 });
+      }
+
+      searchCondition.space = requestedSpace._id;
+      searchCondition.postType = "space";
+    }
+
+    let requestedCircle = null;
+    if (circle) {
+      requestedCircle = await Circle.findOne({ slug: circle, published: true });
+
+      if (!requestedCircle) {
+        return res.json({ data: [], count: 0 });
+      }
+
+      const canViewCircle =
+        requestedCircle.mode === "public" ||
+        (userId &&
+          (requestedCircle.owner.equals(userId) ||
+            (await CircleMember.findOne({
+              circleId: requestedCircle._id,
+              userId,
+              status: "approved",
+            }))));
+
+      if (!canViewCircle) {
+        return res.json({ data: [], count: 0 });
+      }
+
+      searchCondition.circle = requestedCircle._id;
+      searchCondition.postType = "circle";
+      searchCondition.status = "approved";
+    }
+
     let posts = await Post.find(searchCondition)
       .populate("poster", "-password")
+      .populate("space")
+      .populate("circle")
       .populate("tags")
       .sort(sortBy)
       .lean();
 
+    posts = posts.filter((post) => {
+      if (post.postType === "space") return post.space?.published;
+      if (post.postType === "circle") {
+        return (
+          post.status === "approved" &&
+          post.circle?.published &&
+          (circle || post.circle.mode === "public")
+        );
+      }
+      return true;
+    });
+
     if (author) {
-      posts = posts.filter((post) => post.poster?.username == author);
+      posts = posts.filter(
+        (post) =>
+          post.postType !== "space" &&
+          post.postType !== "circle" &&
+          post.poster?.username == author
+      );
     }
 
     const count = posts.length;
@@ -286,6 +512,8 @@ const getPosts = async (req, res) => {
 
     if (userId) {
       await setLiked(posts, userId);
+      await setSpaceVotes(posts, userId);
+      await setCircleHelpful(posts, userId);
     }
 
     await enrichWithUserLikePreview(posts);
@@ -306,6 +534,10 @@ const likePost = async (req, res) => {
 
     if (!post) {
       throw new Error("Post does not exist");
+    }
+
+    if (post.postType === "space") {
+      throw new Error("Space posts use votes instead of likes");
     }
 
     const existingPostLike = await PostLike.findOne({ postId, userId });
@@ -340,6 +572,10 @@ const unlikePost = async (req, res) => {
       throw new Error("Post does not exist");
     }
 
+    if (post.postType === "space") {
+      throw new Error("Space posts use votes instead of likes");
+    }
+
     const existingPostLike = await PostLike.findOne({ postId, userId });
 
     if (!existingPostLike) {
@@ -356,6 +592,91 @@ const unlikePost = async (req, res) => {
   } catch (err) {
     return res.status(400).json({ error: err.message });
   }
+};
+
+const votePost = async (req, res) => {
+  try {
+    const postId = req.params.id;
+    const { userId, value } = req.body;
+    const voteValue = Number(value);
+
+    if (![1, -1].includes(voteValue)) {
+      throw new Error("Vote value must be 1 or -1");
+    }
+
+    const post = await Post.findById(postId).populate("space");
+
+    if (!post || post.postType !== "space" || !post.space?.published) {
+      throw new Error("Space post does not exist");
+    }
+
+    const existingVote = await SpacePostVote.findOne({ postId, userId });
+
+    if (existingVote) {
+      existingVote.value = voteValue;
+      await existingVote.save();
+    } else {
+      await SpacePostVote.create({ postId, userId, value: voteValue });
+    }
+
+    await refreshPostVoteCounts(post);
+    await refreshSpaceVoteTotals(post.space);
+
+    return res.json({
+      success: true,
+      upvoteCount: post.upvoteCount,
+      downvoteCount: post.downvoteCount,
+      voteScore: post.voteScore,
+      impressionCount: post.impressionCount,
+      viewerVote: voteValue,
+    });
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+};
+
+const unvotePost = async (req, res) => {
+  try {
+    const postId = req.params.id;
+    const { userId } = req.body;
+    const post = await Post.findById(postId).populate("space");
+
+    if (!post || post.postType !== "space") {
+      throw new Error("Space post does not exist");
+    }
+
+    await SpacePostVote.deleteOne({ postId, userId });
+    await refreshPostVoteCounts(post);
+    if (post.space) await refreshSpaceVoteTotals(post.space);
+
+    return res.json({
+      success: true,
+      upvoteCount: post.upvoteCount,
+      downvoteCount: post.downvoteCount,
+      voteScore: post.voteScore,
+      impressionCount: post.impressionCount,
+      viewerVote: null,
+    });
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+};
+
+const refreshPostVoteCounts = async (post) => {
+  const upvoteCount = await SpacePostVote.countDocuments({
+    postId: post._id,
+    value: 1,
+  });
+  const downvoteCount = await SpacePostVote.countDocuments({
+    postId: post._id,
+    value: -1,
+  });
+
+  post.upvoteCount = upvoteCount;
+  post.downvoteCount = downvoteCount;
+  post.voteScore = upvoteCount - downvoteCount;
+  post.impressionCount = upvoteCount + downvoteCount;
+  await post.save();
 };
 
 const getUserLikes = async (req, res) => {
@@ -401,6 +722,8 @@ module.exports = {
   deletePost,
   likePost,
   unlikePost,
+  votePost,
+  unvotePost,
   getUserLikedPosts,
   getUserLikes,
 };

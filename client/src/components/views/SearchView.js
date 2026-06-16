@@ -4,14 +4,14 @@ import GridLayout from "../GridLayout";
 import Navbar from "../Navbar";
 import PostBrowser from "../PostBrowser";
 import Sidebar from "../Sidebar";
-import TopTags from "../TopTags";
+import DiscoverRail from "../DiscoverRail";
 
 const SearchView = () => {
   return (
     <Container>
       <Navbar />
       <GridLayout
-        leftRail={<TopTags />}
+        leftRail={<DiscoverRail />}
         left={
           <Stack spacing={2}>
             <PostBrowser createPost contentType="posts" />

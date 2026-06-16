@@ -5,14 +5,14 @@ import GridLayout from "../GridLayout";
 import Navbar from "../Navbar";
 import PostEditor from "../PostEditor";
 import Sidebar from "../Sidebar";
-import TopTags from "../TopTags";
+import DiscoverRail from "../DiscoverRail";
 
 const CreatePostView = () => {
   return (
     <Container>
       <Navbar />
       <GoBack />
-      <GridLayout leftRail={<TopTags />} left={<PostEditor />} right={<Sidebar />} />
+      <GridLayout leftRail={<DiscoverRail />} left={<PostEditor />} right={<Sidebar />} />
     </Container>
   );
 };

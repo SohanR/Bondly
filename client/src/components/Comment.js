@@ -142,6 +142,7 @@ const Comment = (props) => {
             <HorizontalStack>
               <ContentDetails
                 username={comment.commenter.username}
+                user={comment.commenter}
                 createdAt={comment.createdAt}
                 edited={comment.edited}
               />

@@ -73,3 +73,21 @@ npm start
 ### Search view
 ![image](https://user-images.githubusercontent.com/76620777/170821986-49d2a93a-5486-47fc-885e-37c0d3f628f3.png)
 
+GitHub OAuth
+
+Go to GitHub → Settings → Developer settings → OAuth Apps.
+Create a new OAuth App.
+Use:
+Application name: DevSpace Local
+Homepage URL: http://localhost:3000
+Authorization callback URL: http://localhost:4000/api/users/github/callback
+Copy the Client ID into GITHUB_CLIENT_ID.
+Generate/copy the Client Secret into GITHUB_CLIENT_SECRET.
+Gmail SMTP
+
+Turn on 2-Step Verification for your Gmail account.
+Create a Gmail App Password.
+Set:
+SMTP_USER=yourgmail@gmail.com
+SMTP_PASS=your_16_character_app_password
+SMTP_FROM=DevSpace <yourgmail@gmail.com>

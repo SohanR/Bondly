@@ -1,6 +1,8 @@
 const mongoose = require("mongoose");
 const filter = require("../util/filter");
 const PostLike = require("./PostLike");
+const SpacePostVote = require("./SpacePostVote");
+const CirclePostHelpful = require("./CirclePostHelpful");
 
 const PostSchema = new mongoose.Schema(
   {
@@ -8,6 +10,24 @@ const PostSchema = new mongoose.Schema(
       type: mongoose.Types.ObjectId,
       ref: "user",
       required: true,
+    },
+    postType: {
+      type: String,
+      enum: ["user", "space", "circle"],
+      default: "user",
+    },
+    space: {
+      type: mongoose.Types.ObjectId,
+      ref: "space",
+    },
+    circle: {
+      type: mongoose.Types.ObjectId,
+      ref: "circle",
+    },
+    status: {
+      type: String,
+      enum: ["approved", "pending", "rejected"],
+      default: "approved",
     },
     title: {
       type: String,
@@ -20,6 +40,26 @@ const PostSchema = new mongoose.Schema(
       maxLength: [8000, "Must be no more than 8000 characters"],
     },
     likeCount: {
+      type: Number,
+      default: 0,
+    },
+    upvoteCount: {
+      type: Number,
+      default: 0,
+    },
+    downvoteCount: {
+      type: Number,
+      default: 0,
+    },
+    voteScore: {
+      type: Number,
+      default: 0,
+    },
+    helpfulCount: {
+      type: Number,
+      default: 0,
+    },
+    impressionCount: {
       type: Number,
       default: 0,
     },
@@ -56,6 +96,8 @@ PostSchema.pre("save", function (next) {
 PostSchema.pre("remove", async function (next) {
   console.log(this._id);
   await PostLike.deleteMany({ postId: this._id });
+  await SpacePostVote.deleteMany({ postId: this._id });
+  await CirclePostHelpful.deleteMany({ postId: this._id });
   next();
 });
 

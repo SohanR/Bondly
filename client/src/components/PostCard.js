@@ -29,6 +29,8 @@ import {
   MdModeEditOutline,
 } from "react-icons/md";
 import UserLikePreview from "./UserLikePreview";
+import VoteBox from "./VoteBox";
+import HelpfulBox from "./HelpfulBox";
 
 const PostCard = (props) => {
   const { preview, removePost } = props;
@@ -37,6 +39,8 @@ const PostCard = (props) => {
   const navigate = useNavigate();
   const user = isLoggedIn();
   const isAuthor = user && user?.username === postData?.poster?.username;
+  const isSpacePost = postData?.postType === "space";
+  const isCirclePost = postData?.postType === "circle";
 
   const [editing, setEditing] = useState(false);
   const [confirm, setConfirm] = useState(false);
@@ -120,6 +124,9 @@ const PostCard = (props) => {
             <HorizontalStack justifyContent="space-between">
               <ContentDetails
                 username={post.poster?.username}
+                user={post.poster}
+                space={post.space}
+                circle={post.circle}
                 createdAt={post.createdAt}
                 edited={post.edited}
                 preview={preview === "secondary"}
@@ -243,11 +250,17 @@ const PostCard = (props) => {
               className="post-card-actions"
             >
               <HorizontalStack spacing={1}>
-                <LikeBox
-                  likeCount={likeCount}
-                  liked={post.liked}
-                  onLike={handleLike}
-                />
+                {isSpacePost ? (
+                  <VoteBox post={post} />
+                ) : isCirclePost ? (
+                  <HelpfulBox post={post} />
+                ) : (
+                  <LikeBox
+                    likeCount={likeCount}
+                    liked={post.liked}
+                    onLike={handleLike}
+                  />
+                )}
                 <Button
                   onClick={handleCommentClick}
                   variant="outlined"
@@ -272,11 +285,13 @@ const PostCard = (props) => {
                   justifyContent: { xs: "flex-start", sm: "flex-end" },
                 }}
               >
-                <UserLikePreview
-                  postId={post._id}
-                  userLikePreview={post.userLikePreview}
-                  compact={preview === "secondary"}
-                />
+                {!isSpacePost && !isCirclePost && (
+                  <UserLikePreview
+                    postId={post._id}
+                    userLikePreview={post.userLikePreview}
+                    compact={preview === "secondary"}
+                  />
+                )}
               </Box>
             </Stack>
           </Stack>

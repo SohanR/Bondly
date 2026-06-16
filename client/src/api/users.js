@@ -69,4 +69,66 @@ const updateUser = async (user, data) => {
   }
 };
 
-export { signup, login, getUser, getRandomUsers, updateUser };
+const sendEmailVerificationOtp = async (user) => {
+  try {
+    const res = await fetch(BASE_URL + "api/users/email-verification/send", {
+      method: "POST",
+      headers: {
+        "x-access-token": user.token,
+      },
+    });
+    return await res.json();
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+const confirmEmailVerificationOtp = async (user, otp) => {
+  try {
+    const res = await fetch(BASE_URL + "api/users/email-verification/confirm", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "x-access-token": user.token,
+      },
+      body: JSON.stringify({ otp }),
+    });
+    return await res.json();
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+const getGithubConnectUrl = (user) => {
+  return BASE_URL + "api/users/github/connect?token=" + encodeURIComponent(user.token);
+};
+
+const updateShowcaseBadges = async (user, badges) => {
+  try {
+    const res = await fetch(BASE_URL + "api/users/badges/showcase", {
+      method: "PATCH",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "x-access-token": user.token,
+      },
+      body: JSON.stringify({ badges }),
+    });
+    return await res.json();
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+export {
+  signup,
+  login,
+  getUser,
+  getRandomUsers,
+  updateUser,
+  sendEmailVerificationOtp,
+  confirmEmailVerificationOtp,
+  getGithubConnectUrl,
+  updateShowcaseBadges,
+};

@@ -24,6 +24,10 @@ import LandingPage from "./components/views/LandingPage";
 import PrivateRoute from "./components/PrivateRoute";
 import SearchView from "./components/views/SearchView";
 import MessengerView from "./components/views/MessengerView";
+import CreateSpaceView from "./components/views/CreateSpaceView";
+import SpaceView from "./components/views/SpaceView";
+import CreateCircleView from "./components/views/CreateCircleView";
+import CircleView from "./components/views/CircleView";
 import { initiateSocketConnection } from "./helpers/socketHelper";
 import { isLoggedIn } from "./helpers/authHelper";
 
@@ -41,6 +45,24 @@ function App() {
         <Routes>
           <Route path="/" element={<HomeRoute />} />
           <Route path="/posts/:id" element={<PostView />} />
+          <Route path="/spaces/:slug" element={<SpaceView />} />
+          <Route path="/circles/:slug" element={<CircleView />} />
+          <Route
+            path="/spaces/create"
+            element={
+              <PrivateRoute>
+                <CreateSpaceView />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/circles/create"
+            element={
+              <PrivateRoute>
+                <CreateCircleView />
+              </PrivateRoute>
+            }
+          />
           <Route
             path="/posts/create"
             element={

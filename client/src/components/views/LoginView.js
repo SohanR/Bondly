@@ -1,4 +1,12 @@
-import { Button, Container, Stack, TextField, Typography } from "@mui/material";
+import {
+  Button,
+  Container,
+  IconButton,
+  InputAdornment,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
 import { Box } from "@mui/system";
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -8,6 +16,7 @@ import { loginUser } from "../../helpers/authHelper";
 import Copyright from "../Copyright";
 import "../../AuthPage.css";
 import devSpaceLogo from "../../assets/devspace-logo.png";
+import { MdVisibility, MdVisibilityOff } from "react-icons/md";
 
 const LoginView = () => {
   const navigate = useNavigate();
@@ -18,6 +27,7 @@ const LoginView = () => {
   });
 
   const [serverError, setServerError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -71,7 +81,20 @@ const LoginView = () => {
               id="password"
               name="password"
               onChange={handleChange}
-              type="password"
+              type={showPassword ? "text" : "password"}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      onClick={() => setShowPassword(!showPassword)}
+                      edge="end"
+                    >
+                      {showPassword ? <MdVisibilityOff /> : <MdVisibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
             />
 
             <ErrorAlert error={serverError} />

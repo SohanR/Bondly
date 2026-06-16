@@ -11,6 +11,8 @@ const users = require("./routes/users");
 const comments = require("./routes/comments");
 const messages = require("./routes/messages");
 const tags = require("./routes/tags");
+const spaces = require("./routes/spaces");
+const circles = require("./routes/circles");
 
 dotenv.config();
 
@@ -28,11 +30,14 @@ mongoose.set("bufferCommands", false);
 
 app.use(express.json());
 app.use(cors(["http://localhost:3000"]));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/posts", posts);
 app.use("/api/users", users);
 app.use("/api/comments", comments);
 app.use("/api/messages", messages);
 app.use("/api/tags", tags);
+app.use("/api/spaces", spaces);
+app.use("/api/circles", circles);
 
 if (process.env.NODE_ENV == "production") {
   app.use(express.static(path.join(__dirname, "/client/build")));
